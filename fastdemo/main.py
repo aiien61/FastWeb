@@ -28,4 +28,4 @@ def happy(status_code=200):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("greet:app", reload=True)
+    uvicorn.run("main:app", reload=True)
