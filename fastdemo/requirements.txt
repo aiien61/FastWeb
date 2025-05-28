@@ -3,3 +3,5 @@ uvicorn==0.34.2
 httpie==3.2.4
 requests==2.32.3
 httpx==0.28.1
+python-multipart==0.0.20
+PyJWT==2.10.1
