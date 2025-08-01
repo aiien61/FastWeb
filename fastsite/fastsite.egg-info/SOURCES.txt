@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+fastsite.egg-info/PKG-INFO
+fastsite.egg-info/SOURCES.txt
+fastsite.egg-info/dependency_links.txt
+fastsite.egg-info/requires.txt
+fastsite.egg-info/top_level.txt
+src/__init__.py
+src/main.py
