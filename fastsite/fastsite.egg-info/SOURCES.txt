@@ -6,4 +6,7 @@ fastsite.egg-info/dependency_links.txt
 fastsite.egg-info/requires.txt
 fastsite.egg-info/top_level.txt
 src/__init__.py
+src/auth.py
+src/errors.py
 src/main.py
+src/manual_test.py
