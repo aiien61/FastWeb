@@ -1,37 +1,30 @@
 import os
 import pytest
-from model.creature import Creature
+from model.explorer import Explorer
 from errors import Missing, Duplicate
 
 os.environ["CRYPTID_SQLITE_DB"] = ":memory:"
 from src.data.init import get_db, conn
-from src.data import creature as data
+from src.data import explorer as data
 
-# CRITICAL FOR TESTING: The autouse=True fixture is the key to test isolation.
-# It guarantees that every single test in this file runs with a clean, empty database.
 @pytest.fixture(autouse=True)
 def db_setup_and_teardown():
-    # SETUP: Recreate the tables on a fresh in-memory db before each test.
     get_db(reset=True)
     yield
-    conn.execute("DELETE FROM creature")
+    conn.execute("DELETE FROM explorer")
     conn.commit()
 
-@pytest.fixture
-def sample() -> Creature:
-    return Creature(name="Yeti",
-                    aka="Abominable Snowman",
-                    country="NPL",
-                    area="Himalayas",
-                    description="Hapless Himalayan")
-
-def assert_duplicate(exc):
-    assert exc.value.status_code == 409
-    assert "already exists" in exc.value.detail
+@pytest.fixture()
+def sample() -> Explorer:
+    return Explorer(name="Indiana Jones", country="USA", description="world-famous explorer")
 
 def assert_missing(exc):
     assert exc.value.status_code == 404
-    assert "not found" in exc.value.detail
+    assert "not found" in exc.value.msg
+
+def assert_duplicate(exc):
+    assert exc.value.status_code == 401
+    assert "already exists" in exc.value.msg
 
 def test_create(sample):
     resp = data.create(sample)
@@ -47,24 +40,30 @@ def test_get_one(sample):
     data.create(sample)
     resp = data.get_one_by_name(sample.name)
     assert resp == sample
-
+    
 def test_get_one_missing():
     with pytest.raises(Missing) as exc:
-        resp = data.get_one_by_name("boxturtle")
+        _ = data.get_one_by_name("Gulliver")
     assert_missing(exc)
+
+def test_get_all(sample):
+    data.create(sample)
+    resp = data.get_all()
+    assert resp == [sample]
 
 def test_modify(sample):
     data.create(sample)
-
-    original_name = sample.name
-    sample.area = "Seasame Street"
+    original_name: str = sample.name
+    sample.country = "AUS"
     resp = data.modify(original_name, sample)
-    assert resp.area == "Seasame Street"
+    assert resp.country == "AUS"
 
 def test_modify_missing():
-    thing: Creature = Creature(name="snurfle", description="something", country="somewhere")
+    man: Explorer = Explorer(name="Gulliver", 
+                             country="UK", 
+                             description="Main character of Gulliver's Travel")
     with pytest.raises(Missing) as exc:
-        _ = data.modify(thing.name, thing)
+        _ = data.modify(man.name, man)
     assert_missing(exc)
 
 def test_delete(sample):

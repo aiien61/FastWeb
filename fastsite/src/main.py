@@ -1,9 +1,9 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from web import explorer, creature, user
 import uvicorn
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = FastAPI()
 app.include_router(explorer.router)

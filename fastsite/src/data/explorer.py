@@ -7,17 +7,17 @@ curs.execute("""CREATE TABLE IF NOT EXISTS explorer(
                 country text,
                 description text)""")
 
-def row_to_model(row: tuple) -> Explorer:
+def row_to_model(row: tuple[str]) -> Explorer:
     return Explorer(name=row[0], country=row[1], description=row[2])
 
-def model_to_dict(explorer: Explorer) -> dict:
+def model_to_dict(explorer: Explorer) -> dict[str, str]:
     return explorer.model_dump() if explorer else None
 
-def get_one(name: str) -> Explorer:
+def get_one_by_name(name: str) -> Explorer:
     qry: str = "SELECT * FROM explorer WHERE name=:name"
     params: dict[str, str] = {"name": name}
     curs.execute(qry, params)
-    row = curs.fetchone()
+    row: tuple[str] = curs.fetchone()
     if row:
         return row_to_model(row)
     else:
@@ -32,7 +32,7 @@ def create(explorer: Explorer) -> Explorer:
     qry: str = """INSERT INTO explorer (name, country, description) 
                   VALUES (:name, :country, :description)"""
     
-    params = model_to_dict(explorer)
+    params: dict[str, str] = model_to_dict(explorer)
     try:
         _ = curs.execute(qry, params)
         conn.commit()
@@ -40,25 +40,28 @@ def create(explorer: Explorer) -> Explorer:
         conn.rollback()
         raise Duplicate(msg=f"Explorer {explorer.name} already exists.")
     
-    return get_one(explorer.name)
+    return get_one_by_name(explorer.name)
 
+# MUST accept both arguments
+# The 'name' is the original name from the URL, 'explorer.name' could be the new name
 def modify(name: str, explorer: Explorer) -> Explorer:
-    if not (name and explorer): 
-        return None
+    # if not (name and explorer): 
+    #     return None
 
     qry: str = """UPDATE explorer
                   SET country=:country,
                       name=:name,
-                      description=:description,
+                      description=:description
                   WHERE name=:name_orig"""
     
-    params = model_to_dict(explorer)
-    params["name_orig"] = explorer.name
+    params: dict[str, str] = model_to_dict(explorer)
+    params["name_orig"] = name
     _ = curs.execute(qry, params)
-    conn.commit()
     if curs.rowcount == 1:
-        return get_one(explorer.name)
+        conn.commit()
+        return get_one_by_name(explorer.name)
     else:
+        conn.rollback()
         raise Missing(msg=f"Explorer {name} not found.")
 
 def delete(name: str) -> bool:

@@ -13,7 +13,7 @@ def get_all() -> list[Explorer]:
     """Return all explorers"""
     return _explorers
 
-def get_one(name: str) -> Explorer | None:
+def get_one_by_name(name: str) -> Explorer | None:
     for _explorer in _explorers:
         if _explorer.name == name:
             return _explorer
@@ -24,19 +24,34 @@ def create(explorer: Explorer) -> Explorer:
     _explorers.append(explorer)
     return _explorers[-1]
 
-def modify(id: int, explorer: Explorer) -> Explorer:
+def modify(name: str, explorer: Explorer) -> Explorer:
     """Partially modify an explorer"""
-    _explorers[id] = explorer
-    return _explorers[id]
+    id_to_modify: int = None
 
-def replace(id: int, explorer: Explorer) -> Explorer:
-    """Completely replace an explorer"""
-    _explorers[id] = explorer
-    return _explorers[id]
+    for id, _explorer in enumerate(_explorers):
+        if _explorer.name == name:
+            id_to_modify = id
+            break
+    
+    if id_to_modify is None:
+        return None
+    
+    _explorers[id_to_modify] = explorer
+    return _explorers[id_to_modify]
 
-def delete(id: int, explorer: Explorer) -> bool:
+def delete(name: str) -> bool:
     """Delete an explorer and return True if it existed"""
-    _explorers.pop(id)
-    if explorer.name in {_explorer.name for _explorer in _explorers}:
+    id_to_delete: int = None
+    for id, _explorer in enumerate(_explorers):
+        if _explorer.name == name:
+            id_to_delete = id
+            break
+    
+    if id_to_delete is None:
+        return False
+    
+    _explorers.pop(id_to_delete)
+    if name in {_explorer.name for _explorer in _explorers}:
         return True
+    
     return False

@@ -1,4 +1,5 @@
 from model.creature import Creature
+from errors import Missing, Duplicate
 
 _creatures: list[object] = [
     Creature(name="Yeti",
@@ -13,39 +14,52 @@ _creatures: list[object] = [
              aka="Sasquatch")
 ]
 
-def get(id: int) -> Creature:
-    """Return one creature by position"""
-    return _creatures[id]
+# def get_one_by_id(id: int) -> Creature:
+#     """Return one creature by position"""
+#     return _creatures[id]
 
 def get_all() -> list[Creature]:
     """Return all creatures"""
     return _creatures
 
-def get_one(name: str) -> Creature | None:
+def get_one_by_name(name: str) -> Creature:
     """Return one creature by name"""
-    for _creature in _creatures:
+    for _, _creature in enumerate(_creatures):
         if _creature.name == name:
             return _creature
-    return None
+    raise Missing(msg=f"Creature {name} not found.")
 
 def create(creature: Creature) -> Creature:
     """Add a creature"""
+    for c in _creatures:
+        if c.name == creature.name:
+            raise Duplicate(msg=f"Creature {creature.name} already exists.")
     _creatures.append(creature)
     return _creatures[-1]
 
-def modify(id: int, creature: Creature) -> Creature:
+def modify(name:str, creature: Creature) -> Creature:
     """Partially modify a creature"""
-    _creatures[id] = creature
-    return _creatures[id]
+    id_to_modify: int = None
 
-def replace(id: int, creature: Creature) -> Creature:
-    """Completely replace a creature"""
-    _creatures[id] = creature
-    return _creatures[id]
+    for id, _creature in enumerate(_creatures):
+        if _creature.name == name:
+            _creatures[id] = creature
+            id_to_modify = id
 
-def delete(id: int, creature: Creature) -> bool:
+    if id_to_modify is None:
+        raise Missing(msg=f"Creature {name} not found.")
+    else:
+        return _creatures[id_to_modify]
+
+def delete(name: str) -> bool:
     """Delete a creature and return True if it existed"""
-    _creatures.pop(id)
-    if creature.name in {_creature.name for _creature in _creatures}:
-        return False
-    return True
+    id_to_delete: int = None
+    for id, _creature in enumerate(_creatures):
+        if _creature.name == name:
+            id_to_delete = id
+            break
+    if id_to_delete is None:
+        raise Missing(msg=f"Creature {name} not found.")
+    else:
+        _creatures.pop(id_to_delete)
+        return True

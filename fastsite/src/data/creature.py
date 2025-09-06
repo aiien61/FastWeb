@@ -9,33 +9,33 @@ curs.execute("""CREATE TABLE IF NOT EXISTS creature(
              area text,
              aka text)""")
 
-def row_to_model(row: tuple) -> Creature:
+def row_to_model(row: tuple[str]) -> Creature:
     name, description,country, area, aka = row
     return Creature(name=name, description=description, country=country, area=area, aka=aka)
 
-def model_to_dict(creature: Creature) -> dict:
+def model_to_dict(creature: Creature) -> dict[str, str]:
     return creature.model_dump()
 
-def get_one(name: str) -> Creature:
+def get_one_by_name(name: str) -> Creature:
     qry: str = "SELECT * FROM creature WHERE name = :name"
     params: dict[str, str] = {"name": name}
     curs.execute(qry, params)
-    row = curs.fetchone()
+    row: tuple[str] = curs.fetchone()
 
     if not row:
         raise Missing(msg=f"Creature {name} not found.")
 
     return row_to_model(row)
 
-def get_all(name: str) -> list[Creature]:
-    qry = "SELECT * FROM creature"
+def get_all() -> list[Creature]:
+    qry: str = "SELECT * FROM creature"
     curs.execute(qry)
-    rows = list(curs.fetchall())
+    rows: list[tuple] = list(curs.fetchall())
     return [row_to_model(row) for row in rows]
 
-def create(creature: Creature):
-    qry = """INSERT INTO creature VALUES (:name, :description, :country, :area, :aka)"""
-    params = model_to_dict(creature)
+def create(creature: Creature) -> Creature:
+    qry: str = """INSERT INTO creature VALUES (:name, :description, :country, :area, :aka)"""
+    params: dict[str, str] = model_to_dict(creature)
     try:
         curs.execute(qry, params)
         conn.commit()
@@ -43,9 +43,9 @@ def create(creature: Creature):
         conn.rollback()
         raise Duplicate(msg=f"Creature {creature.name} already exists.")
     
-    return get_one(creature.name)
+    return get_one_by_name(creature.name)
 
-def modify(creature: Creature) -> Creature:
+def modify(name:str, creature: Creature) -> Creature:
     qry = """UPDATE creature
              SET country=:country,
                  name=:name,
@@ -54,17 +54,19 @@ def modify(creature: Creature) -> Creature:
                  aka=:aka
              WHERE name=:name_orig"""
     
-    params = model_to_dict(creature)
-    params["name_orig"] = creature.name
-    _ = curs.execute(qry, params)
-    return get_one(creature.name)
-
-def replace(creature: Creature):
-    return creature
+    params: dict[str, str] = model_to_dict(creature)
+    params["name_orig"] = name
+    curs.execute(qry, params)
+    if curs.rowcount == 1:
+        conn.commit()
+        return get_one_by_name(creature.name)
+    else:
+        conn.rollback()
+        raise Missing(msg=f"Creature {creature.name} not found to modify.")
 
 def delete(name: str):
     qry = "DELETE FROM creature WHERE name = :name"
-    params = {"name": name}
+    params: dict[str, str] = {"name": name}
     res = curs.execute(qry, params)
 
     if res.rowcount != 1:

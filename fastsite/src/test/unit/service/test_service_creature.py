@@ -1,44 +1,81 @@
+import os
+import copy
+import pytest
+os.environ["CRYPTID_UNIT_TEST"] = "true"
+
 from model.creature import Creature
-from service import creature as code
-from fake.creature import _creatures
+from errors import Missing, Duplicate
+from src.data.init import get_db, conn
+from src.service import creature as service
 
-sample = Creature(name="Yeti", 
-                  aka="Abominable Snowman",
-                  country="NPL",
-                  area="Himalayas",
-                  description="Hirsute Himalayan")
+@pytest.fixture(autouse=True)
+def db_setup_and_teardown():
+    # SETUP: Recreate the tables on a fresh in-memory db before each test.
+    get_db(reset=True)
+    yield
+    conn.execute("DELETE FROM creature")
+    conn.commit()
 
-def test_create():
-    resp = code.create(sample)
+@pytest.fixture
+def sample() -> Creature:
+    return Creature(name="Yeti",
+                    aka="Abominable Snowman",
+                    country="NPL",
+                    area="Himalayas",
+                    description="Handsom Himalayan")
+
+def assert_duplicate(exc):
+    assert exc.value.status_code == 409
+    assert "already exists" in exc.value.detail
+
+def assert_missing(exc):
+    assert exc.value.status_code == 404
+    assert "not found" in exc.value.detail
+
+def test_create(sample):
+    resp = service.create(sample)
     assert resp == sample
 
-def test_get_exists():
-    resp = code.get_one("Yeti")
+def test_create_duplicate(sample):
+    resp = service.create(sample)
+    assert resp == sample
+    with pytest.raises(Duplicate) as exc:
+        _ = service.create(sample)
+    assert_duplicate(exc)
+
+def test_get_one(sample):
+    resp = service.create(sample)
+    assert resp == sample
+    resp = service.get_one_by_name(sample.name)
     assert resp == sample
 
-def test_get_missing():
-    resp = code.get_one("Boxturtle")
-    assert resp is None
+def test_get_one_missing(sample):
+    with pytest.raises(Missing) as exc:
+        _ = service.get_one_by_name(sample.name)
+    assert_missing(exc)
 
-def test_get_all():
-    resp = code.get_all()
-    assert resp == _creatures
+def test_modify(sample):
+    service.create(sample)
 
-def test_modify():
-    sample.description = "Snowman"
-    code.modify(0, sample)
-    resp = code.get(0)
-    assert resp == sample
+    original_name = sample.name
+    sample.country = "CA"
 
-def test_delete_success():
-    sample = Creature(name="Dragon",
-                      description="A winged, fire-breathing creature",
-                      country="*",
-                      area="*",
-                      aka="Charizard")
-    resp = code.delete(1, sample)
+    resp = service.modify(original_name, sample)
+    assert resp.country == "CA"
+
+def test_modify_missing():
+    bob: Creature = Creature(name="bob", country="US", area="*", description="some guy", aka="??")
+    with pytest.raises(Missing) as exc:
+        _ = service.modify(bob.name, bob)
+    assert_missing(exc)
+
+def test_delete(sample):
+    service.create(sample)
+    
+    resp = service.delete(sample.name)
     assert resp is True
 
-def test_delete_failure():
-    resp = code.delete(0, sample)
-    assert resp is False
+def test_delete_missing():
+    with pytest.raises(Missing) as exc:
+        _ = service.delete("emu")
+    assert_missing(exc)
