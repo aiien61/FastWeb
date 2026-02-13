@@ -11,7 +11,12 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "fastapi-users>=15.0.4",
     "httpie>=3.2.4",
     "httpx>=0.28.1",
+    "passlib[argon2]>=1.7.4",
+    "pyjwt>=2.11.0",
+    "python-jose>=3.5.0",
+    "python-multipart>=0.0.22",
     "requests>=2.32.5",
 ]
