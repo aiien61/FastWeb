@@ -5,6 +5,8 @@ from typing import Optional
 
 app = FastAPI()
 
+# alternative: acceptable error handler for simple, convenient handling
+
 order_data: dict = {
     'PO1001': {
         "order_id": "PO1001",
@@ -36,7 +38,6 @@ async def create_order(order: OrderIn):
 
     return order_dict
 
-
 @app.get("/orders/{order_id}", status_code=200, response_model=OrderOut)
 async def get_order(order_id: str = Path(..., regex=r'PO\d{4}')):
     order = order_data.get(order_id)
@@ -45,6 +46,7 @@ async def get_order(order_id: str = Path(..., regex=r'PO\d{4}')):
     
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Order {order_id} not found.")
 
+# alternative: best practice for professional error handler
 
 product_data: dict = {
     'P1001': {
@@ -88,6 +90,8 @@ async def product_not_found_exception_handler(request: Request, exc: ProductNotF
         'message': f"Product {exc.product_id} not found.",
         'info': 'additional information'
     })
+
+# # alternative: the worst case of error handler. AVOID!!!
 
 job_data: dict = {
     'J1001': {
